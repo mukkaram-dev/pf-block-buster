@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="SFMl.setup.vcxproj" />
+  <Project Path="SFMl.setup.vcxproj" Id="162c3699-edf8-4768-91b2-418dc8d59037" />
 </Solution>
