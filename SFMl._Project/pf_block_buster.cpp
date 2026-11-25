@@ -2,6 +2,7 @@
 #include <fstream>             
 #include <string>
 #include <cstdlib> 
+
 using namespace std;
 //windows initialization
 const int WINDOW_W = 600;
@@ -30,7 +31,35 @@ const int ROWS = 8;
 const int COLS = 10;
 int bricks[ROWS][COLS];
 
+const int MENU = 0;
+const int PLAYING = 1;
+const int GAME_OVER = 2;
+int gameState = MENU;        
+int menuChoice = 0;          
+string menuMessage = "";      
+bool exitGame = false;        
+bool playerWon = false;
+int lives = START_LIVES;
 
+
+void updateMenu();
+void updatePlaying();
+void updateGameOver();
+void drawMenu(sf::RenderWindow& window);
+void drawPlaying(sf::RenderWindow& window);
+void drawGameOver(sf::RenderWindow& window);
+//feature 5 declarattion
+void damageBrick(int r, int c);
+bool hitBricks();
+
+//feature 8 declaration 
+void saveGame();
+bool loadSave();
+void clearSave();
+void continueGame();
+
+
+//feature 1
 bool keyUp = false, keyDown = false, keyEnter = false, keyEsc = false, keySpace = false, moveLeft = false, moveRight = false;
 void handleInput(sf::RenderWindow& window)
 {
@@ -62,6 +91,29 @@ void handleInput(sf::RenderWindow& window)
     moveRight = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right) ||
         sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D);
 }
+void updateGame()
+{
+    switch (gameState)
+    {
+    case MENU:      updateMenu();     break;
+    case PLAYING:   updatePlaying();  break;
+    case GAME_OVER: updateGameOver(); break;
+    }
+}
+void drawGame(sf::RenderWindow& window)
+{
+    window.clear(sf::Color(15, 15, 40));           // dark blue background
+
+    switch (gameState)
+    {
+    case MENU:      drawMenu(window);     break;
+    case PLAYING:   drawPlaying(window);  break;
+    case GAME_OVER: drawGameOver(window); break;
+    }
+
+    window.display();                              // put everything on the screen
+}
+
 //feature 2
 bool readBricks(ifstream& fin)
 {
@@ -146,9 +198,71 @@ void launchBall()
     else
         dx = -3;
 }
+//feature 4
+bool ballTouchesPaddle()
+{
+    return ballX < paddleX + paddleWidth && ballX + BALL_SIZE > paddleX && ballY < PADDLE_Y + PADDLE_H && 
+        ballY + BALL_SIZE > PADDLE_Y;
+}
+void bounceOnPaddle()
+{
+    ballY = BALL_START_Y;  
+    dy = -BALL_SPEED_Y;
+    int part = (ballX + BALL_SIZE / 2 - paddleX) * 4 / paddleWidth;
+    if (part < 0) 
+        part = 0;  
+    if (part > 3)
+        part = 3;
+    int newDx[4] = { -6, -3, 3, 6 };
+    dx = newDx[part];
+}
+
+void endGame(bool won)
+{
+    playerWon = won;
+    gameState = GAME_OVER;
+    clearSave();
+}
+void loseLife()
+{
+    lives--;
+    if (lives <= 0)
+    {
+        endGame(false);           // GAME OVER
+    }
+    else
+    {
+        ballLaunched = false;    // ball goes back on the paddle
+        placeBallOnPaddle();
+    }
+}
+void moveBall()
+{ 
+    ballX += dx;
+    if (ballX < 0 || ballX + BALL_SIZE > WINDOW_W || hitBricks())
+    {
+        ballX -= dx;
+        dx = -dx;                 // reverse the speed
+    }
+
+    ballY += dy;
+    if (ballY < HUD_H || hitBricks())  
+    {
+        ballY -= dy;
+        dy = -dy;
+    }
+    if (dy > 0 && ballTouchesPaddle())
+        bounceOnPaddle();
+
+    if (ballY > WINDOW_H)      // fell below the bottom of the window
+        loseLife();
+}
 int main()
 {
+    srand((unsigned)time(0));
     sf::RenderWindow window(sf::VideoMode({ WINDOW_W, WINDOW_H }), "Block Buster");
     window.setFramerateLimit(60);
+
+    return 0;
 
 }
