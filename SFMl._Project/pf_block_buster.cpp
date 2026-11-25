@@ -257,6 +257,53 @@ void moveBall()
     if (ballY > WINDOW_H)      // fell below the bottom of the window
         loseLife();
 }
+int score = 0;
+
+//feature 5 
+void damageBrick(int r, int c)
+{
+    bricks[r][c]--;
+    if (bricks[r][c] == 0)     // the last hit vanish the brick
+    {
+        score += BREAK_POINTS;
+    }
+    else
+    {
+        score += HIT_POINTS;
+    }
+}
+bool hitBricks()
+{
+    int hitRow[4], hitCol[4]; 
+    int hitCount = 0;
+
+    for (int i = 0; i < 4; i++)
+    {
+        
+        int cx = ballX + (i % 2) * (BALL_SIZE - 1);
+        int cy = ballY + (i / 2) * (BALL_SIZE - 1);
+        if (cx < 0 || cx >= WINDOW_W)
+            continue;
+        if (cy < BRICKS_Y || cy >= BRICKS_Y + ROWS * BRICK_H)
+            continue;
+        int r = (cy - BRICKS_Y) / BRICK_H;   // the formula from the guidelines
+        int c = cx / BRICK_W;
+        if (bricks[r][c] == 0) 
+            continue;           //No brick there
+        bool alreadyHit = false;
+        for (int j = 0; j < hitCount; j++)
+            if (hitRow[j] == r && hitCol[j] == c)
+                alreadyHit = true;
+        if (alreadyHit) continue;
+
+        hitRow[hitCount] = r;
+        hitCol[hitCount] = c;
+        hitCount++;
+        damageBrick(r, c);
+    }
+    return hitCount > 0;
+}
+
 int main()
 {
     srand((unsigned)time(0));
