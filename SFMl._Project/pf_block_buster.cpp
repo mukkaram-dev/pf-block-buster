@@ -304,6 +304,49 @@ bool hitBricks()
     return hitCount > 0;
 }
 
+//feature 6
+void loseLife()
+{
+    lives--;
+    if (lives <= 0)
+    {
+        endGame(false);  // game end if 0 lives
+    }
+    else
+    {
+        ballLaunched = false; //ball will again go on paddle
+        placeBallOnPaddle();
+    }
+}
+int countBricks()
+{
+    int total = 0;
+    for (int r = 0; r < ROWS; r++)
+        for (int c = 0; c < COLS; c++)
+            if (bricks[r][c] > 0)
+                total++;
+    return total;
+}
+sf::Font font;     //the text of sfml needs font to be drawn on the screen and drawing text on the screen
+void drawText(sf::RenderWindow& window, const string& s, float x, float y,
+    unsigned int size, sf::Color color)
+{
+    sf::Text text(font, s, size); 
+    text.setFillColor(color);
+    text.setPosition(sf::Vector2f(x, y));
+    window.draw(text);
+}
+
+void drawHud(sf::RenderWindow& window)
+{
+    sf::RectangleShape hud(sf::Vector2f(WINDOW_W, HUD_H));
+    hud.setFillColor(sf::Color(30, 30, 70));
+    window.draw(hud);
+
+    drawText(window, "SCORE  " + to_string(score), 15, 12, 24, sf::Color::White);
+    drawText(window, "LIVES  " + to_string(lives), 440, 12, 24, sf::Color::White);
+}
+
 int main()
 {
     srand((unsigned)time(0));
