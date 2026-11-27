@@ -18,6 +18,7 @@ const int PADDLE_START_X = 250;
 const int PADDLE_H = 14;
 const int PADDLE_W = 100;
 const int PADDLE_SPEED = 8;
+
 //ball initialization
 const int BALL_SIZE = 12;     //12*12 pixels and radius 6 because ball is circle
 const int BALL_START_Y = 638;      
@@ -346,12 +347,172 @@ void drawHud(sf::RenderWindow& window)
     drawText(window, "SCORE  " + to_string(score), 15, 12, 24, sf::Color::White);
     drawText(window, "LIVES  " + to_string(lives), 440, 12, 24, sf::Color::White);
 }
+//feature 7
+void resetRound()
+{
+    paddleX = PADDLE_START_X;
+    paddleWidth = PADDLE_W;
+    ballLaunched = false;
+    placeBallOnPaddle();
+}
+
+
+void startNewGame()   // Starts new game score 0, 3 lives,and bricks from level.txt
+{
+    if (!loadLevel())
+    {
+        menuMessage = "Error: level.txt is missing!";
+        return;         //will stay on the menu
+    }
+    score = 0;
+    lives = START_LIVES;
+    resetRound();
+    gameState = PLAYING;
+}
+
+void endGame(bool won) // Ends the game and shows YOU WIN , GAME OVER and emptiees the save file
+{
+    playerWon = won;
+    gameState = GAME_OVER;
+    clearSave();     //will be in Feature 8                              
+}
+void updateMenu()
+{
+    if (keyUp)
+    {
+        menuChoice--;
+        if (menuChoice < 0) menuChoice = 2;
+        menuMessage = "";
+    }
+    if (keyDown)
+    {
+        menuChoice++;
+        if (menuChoice > 2) menuChoice = 0;
+        menuMessage = "";
+    }
+    if (keyEnter)
+    {
+        menuMessage = "";
+        switch (menuChoice)
+        {
+        case 0:
+            startNewGame();
+            break;
+        case 1:
+            continueGame();  //will be in Feature 8
+            break;            
+        case 2:
+            exitGame = true;
+            break;
+        }
+    }
+}
+void updatePlaying()
+{
+    if (keyEsc) // save and go back to the menu (Feature 8)
+    {
+        saveGame();
+        gameState = MENU;
+        menuMessage = "";
+        return;
+    }
+
+    movePaddle();                  // Feature 3
+
+    if (keySpace && !ballLaunched) // Feature 3
+        launchBall();
+
+    if (ballLaunched)              // Features 4 and 5
+        moveBall();
+
+    if (gameState == PLAYING && countBricks() == 0) // YOU WIN 
+        endGame(true);
+}
+
+void updateGameOver()
+{
+    if (keyEnter)
+        gameState = MENU;
+}
+void drawCenteredText(sf::RenderWindow& window, const string& s, float y,unsigned int size, sf::Color color)
+{                                                                       // Draws text on the window 
+    sf::Text text(font, s, size);
+    text.setFillColor(color);
+    float textWidth = text.getLocalBounds().size.x;
+    text.setPosition(sf::Vector2f((WINDOW_W - textWidth) / 2.f, y));
+    window.draw(text);
+}
+
+void drawMenu(sf::RenderWindow& window)
+{
+    drawCenteredText(window, "BLOCK BUSTER", 100, 52, sf::Color(255, 210, 60));
+
+    string items[3] = { "New Game", "Continue", "Exit" };
+    for (int i = 0; i < 3; i++)
+    {
+        if (i == menuChoice)        
+            drawCenteredText(window, "> " + items[i] + " <", 260.f + i * 60, 32, sf::Color(60, 220, 255));
+        else
+            drawCenteredText(window, items[i], 260.f + i * 60, 32, sf::Color::White);
+    }
+
+    drawCenteredText(window, menuMessage, 470, 22, sf::Color(255, 80, 110));
+    drawCenteredText(window, "Up/Down + Enter to choose", 600, 18, sf::Color(150, 150, 190));
+    drawCenteredText(window, "In game: Left/Right or A/D move, Space launch, Esc save", 630, 16, sf::Color(150, 150, 190));
+}
+
+void drawPlaying(sf::RenderWindow& window)
+{
+    drawBricks(window);  // Feature 2
+
+    sf::RectangleShape paddle(sf::Vector2f(paddleWidth, PADDLE_H)); //draw paddle 
+    paddle.setFillColor(sf::Color(60, 220, 255));
+    paddle.setPosition(sf::Vector2f(paddleX, PADDLE_Y));
+    window.draw(paddle);
+
+    sf::CircleShape ball(BALL_SIZE / 2);  // ball a circle of radius 6
+    ball.setFillColor(sf::Color::White);
+    ball.setPosition(sf::Vector2f(ballX, ballY));
+    window.draw(ball);
+
+    if (!ballLaunched)
+        drawCenteredText(window, "Press SPACE to launch", 500, 22, sf::Color(150, 150, 190));
+
+    drawHud(window);                           
+}
+
+void drawGameOver(sf::RenderWindow& window)
+{
+    if (playerWon)
+        drawCenteredText(window, "YOU WIN", 240, 60, sf::Color(60, 220, 150));
+    else
+        drawCenteredText(window, "GAME OVER", 240, 60, sf::Color(255, 80, 110));
+
+    drawCenteredText(window, "Final score: " + to_string(score), 340, 30, sf::Color::White);
+    drawCenteredText(window, "Press Enter", 410, 24, sf::Color(150, 150, 190));
+}
 
 int main()
 {
     srand((unsigned)time(0));
     sf::RenderWindow window(sf::VideoMode({ WINDOW_W, WINDOW_H }), "Block Buster");
     window.setFramerateLimit(60);
+    window.setKeyRepeatEnabled(false); 
+
+    if (!font.openFromFile("C:/Windows/Fonts/arial.ttf"))      // it loadss a font 
+        if (!font.openFromFile("arial.ttf"))  
+            return 1;                              // if no font found
+    while (window.isOpen())  //  input , update and draw and 60 times per second
+    {
+        handleInput(window);
+        updateGame();
+        if (exitGame) //if exit is chosen
+        {
+            window.close();
+            break;
+        }
+        drawGame(window);
+    }
 
     return 0;
 
