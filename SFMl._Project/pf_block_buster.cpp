@@ -2,6 +2,8 @@
 #include <fstream>             
 #include <string>
 #include <cstdlib> 
+#include <ctime>
+#include <optional>
 
 using namespace std;
 //windows initialization
@@ -52,6 +54,10 @@ void drawGameOver(sf::RenderWindow& window);
 //feature 5 declarattion
 void damageBrick(int r, int c);
 bool hitBricks();
+
+//feature 6 and 7 declaration
+void loseLife();
+void endGame(bool won);
 
 //feature 8 declaration 
 void saveGame();
@@ -190,14 +196,16 @@ void movePaddle()
     if (!ballLaunched)// the ball is on the paddle before launch
         placeBallOnPaddle();
 }
+
+const int LAUNCH_SPEED_X = 3;     // sideways speed when the ball is launched
 void launchBall()
 {
     ballLaunched = true;
     dy = -BALL_SPEED_Y;
     if (rand() % 2 == 0)
-        dx = 3;       // it will move random left or right
+        dx = LAUNCH_SPEED_X;       // it will move random left or right
     else
-        dx = -3;
+        dx = -LAUNCH_SPEED_X;
 }
 //feature 4
 bool ballTouchesPaddle()
@@ -218,25 +226,7 @@ void bounceOnPaddle()
     dx = newDx[part];
 }
 
-void endGame(bool won)
-{
-    playerWon = won;
-    gameState = GAME_OVER;
-    clearSave();
-}
-void loseLife()
-{
-    lives--;
-    if (lives <= 0)
-    {
-        endGame(false);           // GAME OVER
-    }
-    else
-    {
-        ballLaunched = false;    // ball goes back on the paddle
-        placeBallOnPaddle();
-    }
-}
+
 void moveBall()
 { 
     ballX += dx;
@@ -347,6 +337,7 @@ void drawHud(sf::RenderWindow& window)
     drawText(window, "SCORE  " + to_string(score), 15, 12, 24, sf::Color::White);
     drawText(window, "LIVES  " + to_string(lives), 440, 12, 24, sf::Color::White);
 }
+
 //feature 7
 void resetRound()
 {
@@ -491,7 +482,57 @@ void drawGameOver(sf::RenderWindow& window)
     drawCenteredText(window, "Final score: " + to_string(score), 340, 30, sf::Color::White);
     drawCenteredText(window, "Press Enter", 410, 24, sf::Color(150, 150, 190));
 }
+//feature 8
+void saveGame()
+{
+    ofstream fout("savegame.txt");               // overwrites the file
+    fout << score << " " << lives << "\n";
+    for (int r = 0; r < ROWS; r++)
+    {
+        for (int c = 0; c < COLS; c++)
+        {
+            fout << bricks[r][c];
+            if (c < COLS - 1) fout << " ";       // space between numbers
+        }
+        fout << "\n";                            // the file closes by itself at the end of this function
+    }
+}
 
+bool loadSave()                                  // this functionloads savegame.txt and returns false if there is no saved game
+{
+    ifstream fin("savegame.txt");
+    if (!fin)
+        return false;
+
+    int savedScore, savedLives;
+    if (!(fin >> savedScore >> savedLives))        // empty file -> no saved game
+        return false;
+    if (savedLives <= 0)
+        return false;
+    if (!readBricks(fin))
+        return false;
+
+    score = savedScore;
+    lives = savedLives;
+    return true;
+}
+
+void clearSave()                                 // it empties savegame.txt that opens with ofstream and close
+{
+    ofstream fout("savegame.txt");
+}
+
+
+void continueGame()                              // this funcction will load the saved game
+{
+    if (!loadSave())
+    {
+        menuMessage = "No saved game";
+        return;                                  //will remain on the menu when no game is saved
+    }
+	resetRound();                                //will reset the paddle and ball position
+    gameState = PLAYING;
+}
 int main()
 {
     srand((unsigned)time(0));

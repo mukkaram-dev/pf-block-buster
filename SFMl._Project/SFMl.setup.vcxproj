@@ -145,7 +145,6 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
     <ClCompile Include="pf_block_buster.cpp" />
   </ItemGroup>
   <ItemGroup>
